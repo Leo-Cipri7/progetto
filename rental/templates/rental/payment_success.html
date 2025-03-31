@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Successful</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin: 0 auto; max-width: 800px; padding: 20px; }
+        .success-message { background-color: #dff0d8; border: 1px solid #d6e9c6; color: #3c763d; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .rental-details { background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .button { display: inline-block; background-color: #4CAF50; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; margin: 10px; }
+        .button:hover { background-color: #45a049; }
+    </style>
+</head>
+<body>
+    <h1>Payment Successful!</h1>
+    
+    <div class="success-message">
+        <h2>Thank you for your payment</h2>
+        <p>Your rental has been confirmed and your payment has been processed successfully.</p>
+        <p>A confirmation email has been sent to {{ rental.customer.email }}.</p>
+    </div>
+    
+    <div class="rental-details">
+        <h2>Rental Details</h2>
+        <p><strong>Car:</strong> {{ rental.car.brand }} {{ rental.car.model }}</p>
+        <p><strong>Period:</strong> from {{ rental.start_date }} to {{ rental.end_date }}</p>
+        <p><strong>Customer:</strong> {{ rental.customer.first_name }} {{ rental.customer.last_name }}</p>
+        <p><strong>Total Amount Paid:</strong> {{ payment.amount }}€</p>
+        <p><strong>Payment Method:</strong> {{ payment.payment_method }}</p>
+        <p><strong>Payment Date:</strong> {{ payment.payment_date }}</p>
+        <p><strong>Payment Status:</strong> {{ payment.status }}</p>
+    </div>
+    
+    <p>Please keep this information for your records.</p>
+    
+    <div>
+        <a href="{% url 'car_list' %}" class="button">Back to car list</a>
+        <a href="{% url 'payment_history' %}" class="button">View payment history</a>
+    </div>
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rental Payment</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin: 0 auto; max-width: 800px; padding: 20px; }
+        .payment-form { border: 1px solid #ccc; padding: 20px; margin: 20px 0; border-radius: 5px; }
+        .rental-details { background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        label { display: block; margin: 10px 0 5px; text-align: left; }
+        select, input { width: 100%; padding: 8px; margin-bottom: 15px; box-sizing: border-box; }
+        button { background-color: #4CAF50; color: white; padding: 10px 15px; border: none; cursor: pointer; font-size: 16px; }
+        button:hover { background-color: #45a049; }
+        .total { font-size: 1.2em; font-weight: bold; margin: 15px 0; }
+    </style>
+</head>
+<body>
+    <h1>Complete Payment</h1>
+    
+    <div class="rental-details">
+        <h2>Rental Details</h2>
+        <p><strong>Car:</strong> {{ rental.car.brand }} {{ rental.car.model }}</p>
+        <p><strong>Period:</strong> from {{ rental.start_date }} to {{ rental.end_date }}</p>
+        <p><strong>Customer:</strong> {{ rental.customer.first_name }} {{ rental.customer.last_name }}</p>
+        <p class="total"><strong>Total Amount:</strong> {{ payment.amount }}€</p>
+    </div>
+    
+    <div class="payment-form">
+        <h2>Payment Information</h2>
+        <form method="post">
+            {% csrf_token %}
+            
+            <label for="payment_method">Payment Method:</label>
+            <select id="payment_method" name="payment_method" required>
+                <option value="Credit Card">Credit Card</option>
+                <option value="PayPal">PayPal</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+            </select>
+            
+            <label for="card_number">Card Number (simulated):</label>
+            <input type="text" id="card_number" name="card_number" placeholder="1234 5678 9012 3456" pattern="[0-9\s]{16,19}">
+            
+            <label for="expiry">Expiry Date (simulated):</label>
+            <input type="text" id="expiry" name="expiry" placeholder="MM/YY" pattern="[0-9]{2}/[0-9]{2}">
+            
+            <label for="cvv">CVV (simulated):</label>
+            <input type="text" id="cvv" name="cvv" placeholder="123" pattern="[0-9]{3,4}">
+            
+            <p><small>Note: This is a simulated payment. No actual transaction will be processed.</small></p>
+            
+            <button type="submit">Confirm Payment</button>
+        </form>
+    </div>
+    
+    <a href="{% url 'car_list' %}">Back to car list</a>
+</body>
+</html>

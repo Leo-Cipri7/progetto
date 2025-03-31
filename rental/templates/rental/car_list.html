@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supercar available</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .filters {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .filter-group {
+            display: inline-block;
+            margin: 0 10px;
+        }
+        .car-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+        .car {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .car:hover {
+            transform: translateY(-5px);
+        }
+        .car img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+        }
+        .car-info {
+            margin: 10px 0;
+            text-align: left;
+        }
+        .car-info p {
+            margin: 5px 0;
+        }
+        .btn {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 4px;
+            text-decoration: none;
+            color: white;
+            margin: 5px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn-primary {
+            background-color: #007bff;
+        }
+        .btn-success {
+            background-color: #28a745;
+        }
+        .btn:hover {
+            opacity: 0.9;
+        }
+        .rating {
+            color: #ffd700;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Supercar available for rent</h1>
+        
+        <div class="filters">
+            <form method="get" action="{% url 'car_list' %}">
+                <div class="filter-group">
+                    <label for="brand">Brand:</label>
+                    <select name="brand" id="brand">
+                        <option value="">All</option>
+                        {% for brand in brands %}
+                            <option value="{{ brand }}" {% if selected_brand == brand %}selected{% endif %}>{{ brand }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="min_price">Min Price:</label>
+                    <input type="number" name="min_price" id="min_price" value="{{ min_price }}" min="0">
+                </div>
+                
+                <div class="filter-group">
+                    <label for="max_price">Max Price:</label>
+                    <input type="number" name="max_price" id="max_price" value="{{ max_price }}" min="0">
+                </div>
+                
+                <div class="filter-group">
+                    <label for="min_hp">Min Horsepower:</label>
+                    <input type="number" name="min_hp" id="min_hp" value="{{ min_hp }}" min="0">
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Filter</button>
+            </form>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <a href="{% url 'payment_history' %}" class="btn btn-success">View Payment History</a>
+        </div>
+
+        <div class="car-grid">
+            {% for car in cars %}
+                <div class="car">
+                    <h2>{{ car.brand }} {{ car.model }}</h2>
+                    
+                    {% if car.image %}
+                        <img src="{{ car.image.url }}" alt="{{ car.brand }} {{ car.model }}">
+                    {% else %}
+                        <p>Image not found.</p>
+                    {% endif %}
+
+                    <div class="car-info">
+                        <p><strong>Year:</strong> {{ car.year }}</p>
+                        <p><strong>Color:</strong> {{ car.color }}</p>
+                        <p><strong>Horsepower:</strong> {{ car.horsepower }}</p>
+                        <p><strong>Price:</strong> {{ car.price_per_day }}€/day</p>
+                        <p><strong>Deposit:</strong> {{ car.deposit }}€</p>
+                        <p><strong>Minimum Age:</strong> {{ car.minimum_age }}</p>
+                        
+                        {% if car.average_rating %}
+                            <div class="rating">
+                                Rating: {{ car.average_rating|floatformat:1 }}/5
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="car-actions">
+                        <a href="{% url 'car_detail' car.id %}" class="btn btn-primary">Details & Reviews</a>
+                        <a href="{% url 'rent_car' car.id %}" class="btn btn-success">Rent Now</a>
+                    </div>
+                </div>
+            {% empty %}
+                <p>No cars available at the moment.</p>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<h1>Do you want to rent the {{ car.brand }} {{ car.model }}?</h1>
+
+
+    {% if car.image %}
+        <img src="{{ car.image.url }}" alt="Image of {{ car.brand }} {{ car.model }}" width="400" />
+    {% else %}
+        <p>Image not found.</p>
+    {% endif %}
+
+    <p>Description: {{ car.description }}</p>
+    <p>Price per day: {{ car.price_per_day }}€</p>
+    <p>Deposit: {{ car.deposit}}€</p>
+    <p>Deposit will be refunded in 30 days</p>
+
+    
+    <form method="post">
+        {% csrf_token %}
+
+        <label for="first_name">First name: </label>
+        <input type="text" id="first_name" name="first_name" required>
+
+        <label for="last_name">Last name: </label>
+        <input type="text" id="last_name" name="last_name" required>
+
+        <label for="email">Email: </label>
+        <input type="email" id="email" name="email" required>
+
+        <label for="start_date">Start Date:</label>
+        <input type="date" id="start_date" name="start_date" required>
+
+        <label for="end_date">End Date:</label>
+        <input type="date" id="end_date" name="end_date" required>
+
+        <p id="total_price"> Total Price (Deposit not included): -- €</p>
+
+        <button type="submit">Confirm Rent</button>
+    </form>
+
+    <script>
+        // Aggiorna il prezzo totale dinamicamente
+        document.getElementById("start_date").addEventListener("change", updatePrice);
+        document.getElementById("end_date").addEventListener("change", updatePrice);
+
+        function updatePrice() {
+            let start_date = new Date(document.getElementById("start_date").value);
+            let end_date = new Date(document.getElementById("end_date").value);
+            let price_per_day = {{ car.price_per_day }};
+
+            if (start_date && end_date && end_date > start_date) {
+                let days = (end_date - start_date) / (1000 * 60 * 60 * 24);
+                let total_price = days * price_per_day;
+                document.getElementById("total_price").innerText = `Total Price: ${total_price} €`;
+            }
+        }
+    </script>
+
+
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}   
+
