@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Car, Customer, Rental, Payment, Review
+from .models import Car, Customer, Rental, Payment, Review, Insurance, Location
 from django.db.models import Avg
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from django.db import models
 
 from django.contrib import messages
@@ -11,13 +11,21 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
+import json
+from django.core.serializers.json import DjangoJSONEncoder
+from django.http import JsonResponse
+
 
 def car_list(request):
+    # Stampa di debug
+    print("Locations available:", Location.objects.all().count())
+    
     # Ottieni i parametri di filtro dalla query string
     brand = request.GET.get('brand')
     min_price = request.GET.get('min_price')
     max_price = request.GET.get('max_price')
     min_hp = request.GET.get('min_hp')
+    location_id = request.GET.get('location')
     
     # Inizia con tutte le auto
     cars = Car.objects.all()
@@ -31,21 +39,29 @@ def car_list(request):
         cars = cars.filter(price_per_day__lte=max_price)
     if min_hp:
         cars = cars.filter(horsepower__gte=min_hp)
+    if location_id:
+        cars = cars.filter(available_locations__id=location_id)
     
     # Aggiungi la valutazione media per ogni auto
     for car in cars:
         car.average_rating = Review.objects.filter(car=car).aggregate(Avg('rating'))['rating__avg']
     
-    # Ottieni tutte le marche disponibili per il filtro
+    # Ottieni tutte le informazioni disponibili per il filtro
     brands = Car.objects.values_list('brand', flat=True).distinct()
+    locations = Location.objects.all()
+    
+    # Stampa di debug
+    print("Locations being sent to template:", [f"{loc.name} - {loc.city}" for loc in locations])
     
     context = {
         'cars': cars,
         'brands': brands,
+        'locations': locations,
         'selected_brand': brand,
         'min_price': min_price,
         'max_price': max_price,
         'min_hp': min_hp,
+        'selected_location': location_id
     }
     
     return render(request, "rental/car_list.html", context)
@@ -53,6 +69,12 @@ def car_list(request):
 
 def rent_car(request, car_id):
     car = get_object_or_404(Car, id=car_id)
+    locations = Location.objects.all()
+    locations_json = {str(loc.id): {
+        'address': loc.address,
+        'opening_hours': loc.opening_hours,
+        'phone': loc.phone
+    } for loc in locations}
 
     if request.method == "POST":
         first_name = request.POST.get("first_name")
@@ -92,25 +114,31 @@ def rent_car(request, car_id):
             customer.last_name = last_name
             customer.save()
 
-        # Calcola il prezzo totale
-        rental_days = (end_date - start_date).days
-        total_price = rental_days * car.price_per_day
+        insurance_id = request.POST.get("insurance")
+        insurance = None
+        if insurance_id:
+            insurance = get_object_or_404(Insurance, id=insurance_id)
+
+        location_id = request.POST.get('pickup_location')
+        location = get_object_or_404(Location, id=location_id)
 
         # Crea il noleggio
         rental = Rental.objects.create(
             car=car,
             customer=customer,
+            insurance=insurance,
             start_date=start_date,
             end_date=end_date,
-            total_price=total_price
+            pickup_location=location
         )
-
+        
+        rental.calculate_total_price()
         rental.save()
 
         # Crea un record di pagamento in stato "pending"
         payment = Payment.objects.create(
             rental=rental,
-            amount=total_price,
+            amount=rental.total_price,
             payment_method="Credit Card",  # Default value
             status="pending"
         )
@@ -119,7 +147,11 @@ def rent_car(request, car_id):
         return redirect('process_payment', payment_id=payment.id)
 
 
-    return render(request, 'rental/rent_car.html', {'car': car})
+    return render(request, 'rental/rent_car.html', {
+        'car': car,
+        'locations': locations,
+        'locations_json': json.dumps(locations_json)
+    })
 
 
 def process_payment(request, payment_id):
@@ -188,6 +220,14 @@ def add_review(request, car_id):
     
     return render(request, 'rental/add_review.html', {'car': car})
 
+def car_availability(request, car_id):
+    car = get_object_or_404(Car, id=car_id)
+    unavailable_dates = car.get_unavailable_dates()
+    
+    return JsonResponse({
+        'unavailable_dates': unavailable_dates
+    })
+
 def car_detail(request, car_id):
     car = get_object_or_404(Car, id=car_id)
     reviews = Review.objects.filter(car=car).order_by('-created_at')
@@ -196,5 +236,6 @@ def car_detail(request, car_id):
     return render(request, 'rental/car_detail.html', {
         'car': car,
         'reviews': reviews,
-        'average_rating': round(average_rating, 1)
+        'average_rating': round(average_rating, 1),
+        'today': date.today().strftime('%Y-%m-%d')
     })

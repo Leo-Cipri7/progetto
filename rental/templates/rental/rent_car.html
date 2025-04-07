@@ -1,61 +1,471 @@
-<h1>Do you want to rent the {{ car.brand }} {{ car.model }}?</h1>
+{% extends 'base.html' %}
+{% load static %}
 
+{% block content %}
+<!-- Aggiungi questi link nell'head -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
-    {% if car.image %}
-        <img src="{{ car.image.url }}" alt="Image of {{ car.brand }} {{ car.model }}" width="400" />
-    {% else %}
-        <p>Image not found.</p>
-    {% endif %}
+<div class="rental-container">
+    <div class="navigation-bar">
+        <a href="{% url 'car_list' %}" class="back-button">
+            <i class="fas fa-arrow-left"></i> Back to Cars
+        </a>
+    </div>
 
-    <p>Description: {{ car.description }}</p>
-    <p>Price per day: {{ car.price_per_day }}€</p>
-    <p>Deposit: {{ car.deposit}}€</p>
-    <p>Deposit will be refunded in 30 days</p>
+    <div class="rental-content">
+        <h1>Rent {{ car.brand }} {{ car.model }}</h1>
+        
+        {% if car.minimum_age %}
+        <div class="age-banner">
+            <i class="fas fa-user-shield"></i>
+            <span>Minimum age: {{ car.minimum_age }}</span>
+        </div>
+        {% endif %}
+        
+        {% if car.image %}
+            <div class="car-image-container">
+                <img src="{{ car.image.url }}" alt="Image of {{ car.brand }} {{ car.model }}" class="car-image">
+            </div>
+        {% endif %}
 
-    
-    <form method="post">
-        {% csrf_token %}
+        <div class="car-details">
+            <div class="info-card">
+                <h2>Car Details</h2>
+                <p><i class="fas fa-info-circle"></i> {{ car.description }}</p>
+                <p><i class="fas fa-tag"></i> Price per day: {{ car.price_per_day }}€</p>
+                <p><i class="fas fa-shield-alt"></i> Deposit: {{ car.deposit }}€</p>
+                <p class="deposit-note"><i class="fas fa-clock"></i> Deposit will be refunded in 30 days</p>
+            </div>
 
-        <label for="first_name">First name: </label>
-        <input type="text" id="first_name" name="first_name" required>
+            <div class="rental-form">
+                <h2>Rental Information</h2>
+                <form method="post" class="booking-form">
+                    {% csrf_token %}
 
-        <label for="last_name">Last name: </label>
-        <input type="text" id="last_name" name="last_name" required>
+                    <div class="form-group">
+                        <label for="first_name">First Name</label>
+                        <input type="text" id="first_name" name="first_name" required 
+                               class="form-control" placeholder="Enter your first name">
+                    </div>
 
-        <label for="email">Email: </label>
-        <input type="email" id="email" name="email" required>
+                    <div class="form-group">
+                        <label for="last_name">Last Name</label>
+                        <input type="text" id="last_name" name="last_name" required 
+                               class="form-control" placeholder="Enter your last name">
+                    </div>
 
-        <label for="start_date">Start Date:</label>
-        <input type="date" id="start_date" name="start_date" required>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" required 
+                               class="form-control" placeholder="Enter your email">
+                    </div>
 
-        <label for="end_date">End Date:</label>
-        <input type="date" id="end_date" name="end_date" required>
+                    <div class="date-group">
+                        <div class="form-group">
+                            <label for="rental-dates">Select Dates</label>
+                            <input type="text" id="rental-dates" class="form-control" placeholder="Select your rental dates" required>
+                            <input type="hidden" id="start_date" name="start_date">
+                            <input type="hidden" id="end_date" name="end_date">
+                        </div>
+                    </div>
 
-        <p id="total_price"> Total Price (Deposit not included): -- €</p>
+                    <div class="form-group">
+                        <label for="pickup_location">Pickup Location</label>
+                        <select name="pickup_location" id="pickup_location" class="form-control" required>
+                            <option value="">Select a location</option>
+                            {% for location in locations %}
+                            <div class="location-option">
+                                <option value="{{ location.id }}">
+                                    {{ location.name }} - {{ location.city }}
+                                </option>
+                            </div>
+                            {% endfor %}
+                        </select>
+                        <small class="location-info" id="location-info"></small>
+                    </div>
 
-        <button type="submit">Confirm Rent</button>
-    </form>
+                    {% if insurances %}
+                    <div class="insurance-section">
+                        <h3>Select Insurance</h3>
+                        {% for insurance in insurances %}
+                        <div class="insurance-option">
+                            <input type="radio" id="insurance_{{ insurance.id }}" 
+                                   name="insurance" value="{{ insurance.id }}"
+                                   {% if forloop.first %}checked{% endif %}>
+                            <label for="insurance_{{ insurance.id }}">
+                                <div class="insurance-header">
+                                    <span class="insurance-name">{{ insurance.name }}</span>
+                                    <span class="insurance-price">{{ insurance.price_per_day }}€/day</span>
+                                </div>
+                                <p class="insurance-description">{{ insurance.description }}</p>
+                                <p class="insurance-coverage">Coverage: {{ insurance.coverage_amount }}€</p>
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
 
-    <script>
-        // Aggiorna il prezzo totale dinamicamente
-        document.getElementById("start_date").addEventListener("change", updatePrice);
-        document.getElementById("end_date").addEventListener("change", updatePrice);
+                    <div id="total_price" class="price-summary"></div>
 
-        function updatePrice() {
-            let start_date = new Date(document.getElementById("start_date").value);
-            let end_date = new Date(document.getElementById("end_date").value);
-            let price_per_day = {{ car.price_per_day }};
+                    <button type="submit" class="submit-btn">Confirm Rental</button>
+                </form>
+            </div>
+        </div>
 
-            if (start_date && end_date && end_date > start_date) {
-                let days = (end_date - start_date) / (1000 * 60 * 60 * 24);
-                let total_price = days * price_per_day;
-                document.getElementById("total_price").innerText = `Total Price: ${total_price} €`;
-            }
+        {% if error %}
+            <div class="error-message">
+                <i class="fas fa-exclamation-circle"></i>
+                {{ error }}
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .rental-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .navigation-bar {
+        margin: 20px 0;
+        padding: 10px 0;
+        border-bottom: 1px solid #eee;
+    }
+
+    .back-button {
+        display: inline-flex;
+        align-items: center;
+        padding: 10px 20px;
+        background-color: #333;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        transition: background-color 0.3s;
+    }
+
+    .back-button:hover {
+        background-color: #444;
+    }
+
+    .back-button i {
+        margin-right: 8px;
+    }
+
+    .rental-content {
+        background: white;
+        border-radius: 10px;
+        padding: 30px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .car-image-container {
+        margin: 20px 0;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .car-image {
+        width: 100%;
+        max-width: 800px;
+        height: auto;
+        display: block;
+        margin: 0 auto;
+    }
+
+    .car-details {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 30px;
+    }
+
+    .info-card {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .info-card h2 {
+        color: #333;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #f0f0f0;
+        padding-bottom: 10px;
+    }
+
+    .info-card p {
+        margin: 10px 0;
+        color: #666;
+    }
+
+    .deposit-note {
+        font-style: italic;
+        color: #888;
+        font-size: 0.9em;
+    }
+
+    .rental-form {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        color: #555;
+        font-weight: 500;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 16px;
+    }
+
+    .date-group {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .insurance-section {
+        margin: 30px 0;
+        border-top: 2px solid #f0f0f0;
+        padding-top: 20px;
+    }
+
+    .insurance-option {
+        margin: 15px 0;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .insurance-option:hover {
+        border-color: #007bff;
+        background-color: #f8f9fa;
+    }
+
+    .insurance-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .insurance-name {
+        font-weight: bold;
+        color: #333;
+    }
+
+    .insurance-price {
+        color: #28a745;
+        font-weight: bold;
+    }
+
+    .insurance-description {
+        color: #666;
+        margin: 5px 0;
+    }
+
+    .insurance-coverage {
+        color: #007bff;
+        font-size: 0.9em;
+    }
+
+    .price-summary {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin: 20px 0;
+    }
+
+    .price-summary p {
+        margin: 5px 0;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .submit-btn {
+        width: 100%;
+        padding: 15px;
+        background-color: #28a745;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    .submit-btn:hover {
+        background-color: #218838;
+    }
+
+    .error-message {
+        background-color: #fff3f3;
+        color: #dc3545;
+        padding: 15px;
+        border-radius: 5px;
+        margin-top: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    @media (max-width: 768px) {
+        .car-details {
+            grid-template-columns: 1fr;
         }
-    </script>
 
+        .date-group {
+            grid-template-columns: 1fr;
+        }
+    }
 
-    {% if error %}
-        <p style="color: red;">{{ error }}</p>
-    {% endif %}   
+    /* Stili per il calendario */
+    .flatpickr-calendar {
+        background: white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-radius: 8px;
+    }
+
+    .flatpickr-day.selected {
+        background: #4CAF50;
+        border-color: #4CAF50;
+    }
+
+    .flatpickr-day.inRange {
+        background: #E8F5E9;
+        border-color: #A5D6A7;
+    }
+
+    .flatpickr-day.disabled {
+        background: #ffebee;
+        color: #ff5252;
+        text-decoration: line-through;
+    }
+
+    /* Stili per il campo input */
+    #rental-dates {
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 16px;
+        width: 100%;
+        cursor: pointer;
+        background: white;
+    }
+
+    #rental-dates:focus {
+        outline: none;
+        border-color: #4CAF50;
+        box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+    }
+
+    .age-banner {
+        background-color: #f8f9fa;
+        border-left: 4px solid #4CAF50;
+        padding: 15px;
+        margin: 20px 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-radius: 4px;
+    }
+
+    .age-banner i {
+        color: #4CAF50;
+        font-size: 1.2em;
+    }
+
+    .age-banner span {
+        color: #333;
+        font-weight: 500;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        flatpickr("#rental-dates", {
+            mode: "range",
+            minDate: "today",
+            dateFormat: "Y-m-d",
+            disable: [],
+            onChange: function(selectedDates, dateStr, instance) {
+                if (selectedDates.length === 2) {
+                    document.getElementById('start_date').value = selectedDates[0].toISOString().split('T')[0];
+                    document.getElementById('end_date').value = selectedDates[1].toISOString().split('T')[0];
+                    updatePrice();
+                }
+            }
+        });
+
+        // Carica le date non disponibili
+        fetch(`/car/{{ car.id }}/availability/`)
+            .then(response => response.json())
+            .then(data => {
+                const calendar = document.querySelector("#rental-dates")._flatpickr;
+                calendar.set('disable', data.unavailable_dates);
+            });
+    });
+
+    document.querySelectorAll('input[name="insurance"]').forEach(radio => {
+        radio.addEventListener("change", updatePrice);
+    });
+
+    function updatePrice() {
+        let start_date = new Date(document.getElementById("start_date").value);
+        let end_date = new Date(document.getElementById("end_date").value);
+        let price_per_day = {{ car.price_per_day }};
+        let deposit = {{ car.deposit }};
+        let selected_insurance = document.querySelector('input[name="insurance"]:checked');
+        let insurance_price = selected_insurance ? {{ insurances_json|safe }}[selected_insurance.value] : 0;
+
+        if (start_date && end_date && end_date > start_date) {
+            let days = (end_date - start_date) / (1000 * 60 * 60 * 24);
+            let rental_price = days * price_per_day;
+            let insurance_total = days * insurance_price;
+            let total_price = rental_price + insurance_total;
+            
+            document.getElementById("total_price").innerHTML = 
+                `<p>Rental Price: ${rental_price.toFixed(2)} €</p>
+                 <p>Insurance Cost: ${insurance_total.toFixed(2)} €</p>
+                 <p>Total Price: ${total_price.toFixed(2)} €</p>
+                 <p>Required Deposit (Refundable): ${deposit} €</p>
+                 <p><strong>Total Amount to Pay: ${(total_price + deposit).toFixed(2)} €</strong></p>
+                 <small>* Deposit will be refunded within 30 days after the rental period</small>`;
+        }
+    }
+
+    document.getElementById('pickup_location').addEventListener('change', function() {
+        const locationId = this.value;
+        const locationInfo = document.getElementById('location-info');
+        const locations = {{ locations_json|safe }};
+        
+        if (locationId) {
+            const location = locations[locationId];
+            locationInfo.innerHTML = `
+                <strong>Address:</strong> ${location.address}<br>
+                <strong>Opening Hours:</strong> ${location.opening_hours}<br>
+                <strong>Phone:</strong> ${location.phone}
+            `;
+        } else {
+            locationInfo.innerHTML = '';
+        }
+    });
+</script>
+{% endblock %}   
 

@@ -1,160 +1,385 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Supercar available</title>
-    <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            text-align: center; 
-            margin: 0;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        .filters {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .filter-group {
-            display: inline-block;
-            margin: 0 10px;
-        }
-        .car-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-            padding: 20px;
-        }
-        .car {
-            background: white;
-            border-radius: 8px;
-            padding: 15px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            transition: transform 0.2s;
-        }
-        .car:hover {
-            transform: translateY(-5px);
-        }
-        .car img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 4px;
-        }
-        .car-info {
-            margin: 10px 0;
-            text-align: left;
-        }
-        .car-info p {
-            margin: 5px 0;
-        }
-        .btn {
-            display: inline-block;
-            padding: 8px 16px;
-            border-radius: 4px;
-            text-decoration: none;
-            color: white;
-            margin: 5px;
-            border: none;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        .btn-primary {
-            background-color: #007bff;
-        }
-        .btn-success {
-            background-color: #28a745;
-        }
-        .btn:hover {
-            opacity: 0.9;
-        }
-        .rating {
-            color: #ffd700;
-            margin: 5px 0;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Supercar available for rent</h1>
-        
-        <div class="filters">
-            <form method="get" action="{% url 'car_list' %}">
-                <div class="filter-group">
-                    <label for="brand">Brand:</label>
-                    <select name="brand" id="brand">
-                        <option value="">All</option>
-                        {% for brand in brands %}
-                            <option value="{{ brand }}" {% if selected_brand == brand %}selected{% endif %}>{{ brand }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                
-                <div class="filter-group">
-                    <label for="min_price">Min Price:</label>
-                    <input type="number" name="min_price" id="min_price" value="{{ min_price }}" min="0">
-                </div>
-                
-                <div class="filter-group">
-                    <label for="max_price">Max Price:</label>
-                    <input type="number" name="max_price" id="max_price" value="{{ max_price }}" min="0">
-                </div>
-                
-                <div class="filter-group">
-                    <label for="min_hp">Min Horsepower:</label>
-                    <input type="number" name="min_hp" id="min_hp" value="{{ min_hp }}" min="0">
-                </div>
-                
-                <button type="submit" class="btn btn-primary">Filter</button>
-            </form>
-        </div>
+{% extends 'base.html' %}
+{% load static %}
 
-        <div style="margin-bottom: 20px;">
-            <a href="{% url 'payment_history' %}" class="btn btn-success">View Payment History</a>
-        </div>
-
-        <div class="car-grid">
-            {% for car in cars %}
-                <div class="car">
-                    <h2>{{ car.brand }} {{ car.model }}</h2>
-                    
-                    {% if car.image %}
-                        <img src="{{ car.image.url }}" alt="{{ car.brand }} {{ car.model }}">
-                    {% else %}
-                        <p>Image not found.</p>
-                    {% endif %}
-
-                    <div class="car-info">
-                        <p><strong>Year:</strong> {{ car.year }}</p>
-                        <p><strong>Color:</strong> {{ car.color }}</p>
-                        <p><strong>Horsepower:</strong> {{ car.horsepower }}</p>
-                        <p><strong>Price:</strong> {{ car.price_per_day }}€/day</p>
-                        <p><strong>Deposit:</strong> {{ car.deposit }}€</p>
-                        <p><strong>Minimum Age:</strong> {{ car.minimum_age }}</p>
-                        
-                        {% if car.average_rating %}
-                            <div class="rating">
-                                Rating: {{ car.average_rating|floatformat:1 }}/5
-                            </div>
-                        {% endif %}
-                    </div>
-
-                    <div class="car-actions">
-                        <a href="{% url 'car_detail' car.id %}" class="btn btn-primary">Details & Reviews</a>
-                        <a href="{% url 'rent_car' car.id %}" class="btn btn-success">Rent Now</a>
-                    </div>
-                </div>
-            {% empty %}
-                <p>No cars available at the moment.</p>
-            {% endfor %}
-        </div>
+{% block content %}
+<div class="hero-section">
+    <div class="hero-content">
+        <h1 class="brand-name">LuxeDrive</h1>
+        <p class="brand-tagline">Experience Extraordinary</p>
     </div>
-</body>
-</html>
+</div>
+
+<div class="container">
+    <div class="filters">
+        <form method="get" action="{% url 'car_list' %}" class="filter-form">
+            <div class="filter-group">
+                <label for="brand">Brand</label>
+                <select name="brand" id="brand" class="filter-select">
+                    <option value="">All Brands</option>
+                    {% for brand in brands %}
+                        <option value="{{ brand }}" {% if selected_brand == brand %}selected{% endif %}>
+                            {{ brand }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="location">Location</label>
+                <select name="location" id="location" class="filter-select">
+                    <option value="">All Locations</option>
+                    {% for location in locations %}
+                        <option value="{{ location.id }}" {% if selected_location == location.id|stringformat:"s" %}selected{% endif %}>
+                            {{ location.name }} - {{ location.city }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="min_price">Min Price</label>
+                <input type="number" name="min_price" id="min_price" 
+                       value="{{ min_price }}" min="0" class="filter-input"
+                       placeholder="€">
+            </div>
+            
+            <div class="filter-group">
+                <label for="max_price">Max Price</label>
+                <input type="number" name="max_price" id="max_price" 
+                       value="{{ max_price }}" min="0" class="filter-input"
+                       placeholder="€">
+            </div>
+            
+            <div class="filter-group">
+                <label for="min_hp">Min Horsepower</label>
+                <input type="number" name="min_hp" id="min_hp" 
+                       value="{{ min_hp }}" min="0" class="filter-input"
+                       placeholder="HP">
+            </div>
+            
+            <button type="submit" class="filter-button">
+                <i class="fas fa-filter"></i> Filter
+            </button>
+
+            <a href="{% url 'car_list' %}" class="reset-button">
+                <i class="fas fa-undo"></i> Reset Filters
+            </a>
+        </form>
+    </div>
+
+    <div class="car-grid">
+        {% for car in cars %}
+        <div class="car-card">
+            <div class="car-image-container">
+                {% if car.image %}
+                    <img src="{{ car.image.url }}" alt="{{ car.brand }} {{ car.model }}" class="car-image">
+                {% else %}
+                    <div class="no-image">No Image Available</div>
+                {% endif %}
+                {% if car.average_rating %}
+                <div class="rating-badge">
+                    <span class="stars">★</span> {{ car.average_rating|floatformat:1 }}
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="car-info">
+                <h2 class="car-title">{{ car.brand }} {{ car.model }}</h2>
+                <div class="car-specs">
+                    <span class="spec"><i class="fas fa-calendar"></i> {{ car.year }}</span>
+                    <span class="spec"><i class="fas fa-horse"></i> {{ car.horsepower }} HP</span>
+                    <span class="spec"><i class="fas fa-palette"></i> {{ car.color }}</span>
+                </div>
+                <div class="car-pricing">
+                    <div class="price">{{ car.price_per_day }}€<span class="per-day">/day</span></div>
+                    <div class="deposit">Deposit: {{ car.deposit }}€</div>
+                </div>
+                <div class="car-actions">
+                    <a href="{% url 'car_detail' car.id %}" class="btn btn-primary">Details & Reviews</a>
+                    <a href="{% url 'rent_car' car.id %}" class="btn btn-success">Rent Now</a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="no-cars">
+            <p>No cars available at the moment.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    .hero-section {
+        background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('{% static "images/hero-bg.jpg" %}');
+        background-size: cover;
+        background-position: center;
+        height: 400px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        color: white;
+        margin-bottom: 40px;
+    }
+
+    .brand-name {
+        font-size: 4em;
+        font-weight: 700;
+        margin: 0;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+    }
+
+    .brand-tagline {
+        font-size: 1.5em;
+        margin-top: 10px;
+        font-weight: 300;
+    }
+
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
+    }
+
+    .filters {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 30px;
+    }
+
+    .filter-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        align-items: flex-end;
+    }
+
+    .filter-group {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .filter-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: #666;
+        font-weight: 500;
+    }
+
+    .filter-select,
+    .filter-input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 14px;
+        background-color: white;
+    }
+
+    .filter-select:focus,
+    .filter-input:focus {
+        outline: none;
+        border-color: #4CAF50;
+        box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+    }
+
+    .filter-button,
+    .reset-button {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .filter-button {
+        background-color: #4CAF50;
+        color: white;
+    }
+
+    .reset-button {
+        background-color: #f8f9fa;
+        color: #666;
+        text-decoration: none;
+    }
+
+    .filter-button:hover {
+        background-color: #45a049;
+    }
+
+    .reset-button:hover {
+        background-color: #e9ecef;
+    }
+
+    .filter-button i,
+    .reset-button i {
+        font-size: 14px;
+    }
+
+    .car-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 30px;
+        padding: 20px 0;
+    }
+
+    .car-card {
+        background: white;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: transform 0.3s;
+    }
+
+    .car-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .car-image-container {
+        position: relative;
+        height: 200px;
+        overflow: hidden;
+    }
+
+    .car-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .no-image {
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f5f5f5;
+        color: #666;
+    }
+
+    .rating-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: rgba(0,0,0,0.8);
+        color: white;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 14px;
+    }
+
+    .stars {
+        color: #ffd700;
+    }
+
+    .car-info {
+        padding: 20px;
+    }
+
+    .car-title {
+        margin: 0 0 10px 0;
+        font-size: 1.5em;
+        color: #333;
+    }
+
+    .car-specs {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 15px;
+        color: #666;
+        font-size: 14px;
+    }
+
+    .spec i {
+        margin-right: 5px;
+    }
+
+    .car-pricing {
+        margin-bottom: 15px;
+    }
+
+    .price {
+        font-size: 1.8em;
+        color: #333;
+        font-weight: bold;
+    }
+
+    .per-day {
+        font-size: 0.5em;
+        color: #666;
+    }
+
+    .deposit {
+        font-size: 14px;
+        color: #666;
+    }
+
+    .car-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .btn {
+        flex: 1;
+        padding: 10px;
+        text-align: center;
+        text-decoration: none;
+        border-radius: 5px;
+        font-weight: 500;
+        transition: opacity 0.3s;
+    }
+
+    .btn:hover {
+        opacity: 0.9;
+    }
+
+    .btn-primary {
+        background: #333;
+        color: white;
+    }
+
+    .btn-success {
+        background: #4CAF50;
+        color: white;
+    }
+
+    .no-cars {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 40px;
+        background: white;
+        border-radius: 10px;
+        color: #666;
+    }
+
+    @media (max-width: 768px) {
+        .hero-section {
+            height: 300px;
+        }
+
+        .brand-name {
+            font-size: 3em;
+        }
+
+        .filter-group {
+            min-width: 100%;
+        }
+
+        .filter-button,
+        .reset-button {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .car-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
