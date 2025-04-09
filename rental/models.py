@@ -15,10 +15,19 @@ class Car(models.Model):
     image = models.ImageField(upload_to="car_images/", null=True, blank=True)
     minimum_age = models.IntegerField(null=True, blank=True)
     available_locations = models.ForeignKey('Location', on_delete=models.SET_NULL, null=True, blank=True)
+    daily_kilometer_limit = models.IntegerField(null=True, blank=True)
+    extra_kilometer_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    status = models.CharField(max_length=20, choices=[
+        ('available', 'Available'),
+        ('rented', 'Rented'),
+        ('maintenance', 'Maintenance'),
+        ('reserved', 'Reserved')
+    ], default='available')
+    
     
 
     def __str__(self):
-        return f"{self.brand} {self.model} - {self.color} - {self.horsepower}CV - Deposit: {self.deposit}€ - {self.price_per_day}€/day"
+        return f"{self.brand} {self.model} - {self.color} - {self.horsepower}CV - Deposit: {self.deposit}€ - {self.price_per_day}€/day - {self.get_status_display()}"
 
     def is_available(self, start_date, end_date):
         overlapping_rentals = self.rental_set.filter(
@@ -67,6 +76,21 @@ class Rental(models.Model):
     end_date = models.DateField()
     total_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     pickup_location = models.ForeignKey('Location', on_delete=models.SET_NULL, null=True, related_name='pickups')
+    status = models.CharField(max_length=20, choices=[
+        ('pending', 'Pending'),
+        ('confirmed', 'Confirmed'),
+        ('in_progress', 'In Progress'),
+        ('completed', 'Completed'),
+        ('cancelled', 'Cancelled')
+    ], default='pending')
+    created_by = models.ForeignKey('Employee', on_delete=models.SET_NULL, null=True, related_name='created_rentals')
+    notes = models.TextField(blank=True, null=True)
+    payment_status = models.CharField(max_length=20, choices=[
+        ('pending', 'Pending'),
+        ('partial', 'Partial'),
+        ('completed', 'Completed'),
+        ('refunded', 'Refunded')
+    ], default='pending')
 
     def calculate_total_price(self):
         rental_days = (self.end_date - self.start_date).days
@@ -76,7 +100,7 @@ class Rental(models.Model):
         return self.total_price
 
     def __str__(self):
-        return f"Rental: {self.car.brand} {self.car.model} from {self.start_date} to {self.end_date} - {self.customer}"
+        return f"Rental: {self.car.brand} {self.car.model} from {self.start_date} to {self.end_date} - {self.customer} - {self.get_status_display()}"
 
 #pagamenti
 class Payment(models.Model):
@@ -135,3 +159,20 @@ class Maintenance(models.Model):
 
     def __str__(self):
         return f"{self.car} - {self.get_service_type_display()} on {self.service_date}"
+
+class Employee(models.Model):
+    ROLE_CHOICES = [
+        ('admin', 'Amministratore'),
+        ('manager', 'Manager'),
+        ('agent', 'Agente'),
+        ('mechanic', 'Meccanico'),
+    ]
+    
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
+    phone = models.CharField(max_length=15)
+    hire_date = models.DateField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.user.get_full_name()} - {self.get_role_display()}"

@@ -1,0 +1,1 @@
+# Questo file è vuoto ma necessario per Django per riconoscere la cartella come un package Python 

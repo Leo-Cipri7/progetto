@@ -59,7 +59,11 @@
         </div>
 
         <div class="rent-section">
-            <a href="{% url 'rent_car' car.id %}" class="btn btn-success">Rent Now</a>
+            {% if car.status != 'maintenance' %}
+                <a href="{% url 'rent_car' car.id %}" class="btn btn-success">Rent Now</a>
+            {% else %}
+                <button class="btn btn-secondary disabled" disabled>Not Available</button>
+            {% endif %}
         </div>
     </div>
 

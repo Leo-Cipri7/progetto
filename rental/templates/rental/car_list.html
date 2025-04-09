@@ -10,28 +10,16 @@
 </div>
 
 <div class="container">
-    <div class="filters">
-        <form method="get" action="{% url 'car_list' %}" class="filter-form">
-            <div class="filter-group">
-                <label for="brand">Brand</label>
-                <select name="brand" id="brand" class="filter-select">
+    <h1>Available Cars</h1>
+    
+    <div class="filter-section">
+        <form method="get" class="filter-form">
+            <div class="form-group">
+                <label for="brand">Brand:</label>
+                <select name="brand" id="brand">
                     <option value="">All Brands</option>
                     {% for brand in brands %}
-                        <option value="{{ brand }}" {% if selected_brand == brand %}selected{% endif %}>
-                            {{ brand }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <div class="filter-group">
-                <label for="location">Location</label>
-                <select name="location" id="location" class="filter-select">
-                    <option value="">All Locations</option>
-                    {% for location in locations %}
-                        <option value="{{ location.id }}" {% if selected_location == location.id|stringformat:"s" %}selected{% endif %}>
-                            {{ location.name }} - {{ location.city }}
-                        </option>
+                    <option value="{{ brand }}" {% if selected_brand == brand %}selected{% endif %}>{{ brand }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -50,59 +38,62 @@
                        placeholder="€">
             </div>
             
-            <div class="filter-group">
-                <label for="min_hp">Min Horsepower</label>
-                <input type="number" name="min_hp" id="min_hp" 
-                       value="{{ min_hp }}" min="0" class="filter-input"
-                       placeholder="HP">
+            <div class="form-group">
+                <label for="location">Location:</label>
+                <select name="location" id="location">
+                    <option value="">All Locations</option>
+                    {% for location in locations %}
+                    <option value="{{ location.id }}" {% if selected_location == location.id|stringformat:"i" %}selected{% endif %}>{{ location.name }}</option>
+                    {% endfor %}
+                </select>
             </div>
             
-            <button type="submit" class="filter-button">
-                <i class="fas fa-filter"></i> Filter
-            </button>
-
-            <a href="{% url 'car_list' %}" class="reset-button">
-                <i class="fas fa-undo"></i> Reset Filters
-            </a>
+            <button type="submit" class="filter-button">Apply Filters</button>
         </form>
     </div>
 
-    <div class="car-grid">
+    <div class="cars-grid">
         {% for car in cars %}
         <div class="car-card">
-            <div class="car-image-container">
-                {% if car.image %}
-                    <img src="{{ car.image.url }}" alt="{{ car.brand }} {{ car.model }}" class="car-image">
-                {% else %}
-                    <div class="no-image">No Image Available</div>
-                {% endif %}
-                {% if car.average_rating %}
-                <div class="rating-badge">
-                    <span class="stars">★</span> {{ car.average_rating|floatformat:1 }}
+            {% if car.image %}
+            <img src="{{ car.image.url }}" alt="{{ car.brand }} {{ car.model }}" class="car-image">
+            {% endif %}
+            
+            <div class="car-info">
+                <h2>{{ car.brand }} {{ car.model }}</h2>
+                <p class="car-year">{{ car.year }}</p>
+                
+                {% if car.status == 'maintenance' %}
+                <div class="maintenance-badge">
+                    <i class="fas fa-wrench"></i>
+                    <span>Under Maintenance</span>
                 </div>
                 {% endif %}
-            </div>
-
-            <div class="car-info">
-                <h2 class="car-title">{{ car.brand }} {{ car.model }}</h2>
+                
                 <div class="car-specs">
                     <span class="spec"><i class="fas fa-calendar"></i> {{ car.year }}</span>
                     <span class="spec"><i class="fas fa-horse"></i> {{ car.horsepower }} HP</span>
                     <span class="spec"><i class="fas fa-palette"></i> {{ car.color }}</span>
                 </div>
+                
                 <div class="car-pricing">
                     <div class="price">{{ car.price_per_day }}€<span class="per-day">/day</span></div>
                     <div class="deposit">Deposit: {{ car.deposit }}€</div>
                 </div>
+                
                 <div class="car-actions">
                     <a href="{% url 'car_detail' car.id %}" class="btn btn-primary">Details & Reviews</a>
+                    {% if car.status != 'maintenance' %}
                     <a href="{% url 'rent_car' car.id %}" class="btn btn-success">Rent Now</a>
+                    {% else %}
+                    <button class="btn btn-secondary disabled" disabled>Not Available</button>
+                    {% endif %}
                 </div>
             </div>
         </div>
         {% empty %}
         <div class="no-cars">
-            <p>No cars available at the moment.</p>
+            <p>No cars available matching your criteria.</p>
         </div>
         {% endfor %}
     </div>
@@ -139,10 +130,16 @@
     .container {
         max-width: 1200px;
         margin: 0 auto;
-        padding: 0 20px;
+        padding: 20px;
     }
 
-    .filters {
+    h1 {
+        text-align: center;
+        margin-bottom: 30px;
+        color: #2c3e50;
+    }
+
+    .filter-section {
         background: white;
         padding: 20px;
         border-radius: 10px;
@@ -151,83 +148,48 @@
     }
 
     .filter-form {
-        display: flex;
-        flex-wrap: wrap;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         gap: 20px;
-        align-items: flex-end;
+        align-items: end;
     }
 
-    .filter-group {
-        flex: 1;
-        min-width: 200px;
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
     }
 
-    .filter-group label {
-        display: block;
-        margin-bottom: 8px;
-        color: #666;
+    .form-group label {
         font-weight: 500;
+        color: #2c3e50;
     }
 
-    .filter-select,
-    .filter-input {
-        width: 100%;
-        padding: 10px;
+    .form-group select {
+        padding: 8px;
         border: 1px solid #ddd;
         border-radius: 5px;
-        font-size: 14px;
         background-color: white;
     }
 
-    .filter-select:focus,
-    .filter-input:focus {
-        outline: none;
-        border-color: #4CAF50;
-        box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
-    }
-
-    .filter-button,
-    .reset-button {
-        padding: 12px 24px;
+    .filter-button {
+        padding: 10px 20px;
+        background-color: #4CAF50;
+        color: white;
         border: none;
         border-radius: 5px;
         cursor: pointer;
-        font-weight: 500;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        transition: all 0.3s ease;
-    }
-
-    .filter-button {
-        background-color: #4CAF50;
-        color: white;
-    }
-
-    .reset-button {
-        background-color: #f8f9fa;
-        color: #666;
-        text-decoration: none;
+        transition: background-color 0.3s;
     }
 
     .filter-button:hover {
         background-color: #45a049;
     }
 
-    .reset-button:hover {
-        background-color: #e9ecef;
-    }
-
-    .filter-button i,
-    .reset-button i {
-        font-size: 14px;
-    }
-
-    .car-grid {
+    .cars-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
         gap: 30px;
-        padding: 20px 0;
     }
 
     .car-card {
@@ -242,62 +204,55 @@
         transform: translateY(-5px);
     }
 
-    .car-image-container {
-        position: relative;
-        height: 200px;
-        overflow: hidden;
-    }
-
     .car-image {
         width: 100%;
-        height: 100%;
+        height: 200px;
         object-fit: cover;
-    }
-
-    .no-image {
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #f5f5f5;
-        color: #666;
-    }
-
-    .rating-badge {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        background: rgba(0,0,0,0.8);
-        color: white;
-        padding: 5px 10px;
-        border-radius: 20px;
-        font-size: 14px;
-    }
-
-    .stars {
-        color: #ffd700;
     }
 
     .car-info {
         padding: 20px;
     }
 
-    .car-title {
-        margin: 0 0 10px 0;
-        font-size: 1.5em;
+    .car-info h2 {
+        margin: 0 0 5px 0;
         color: #333;
+    }
+
+    .car-year {
+        color: #666;
+        margin: 0 0 15px 0;
+    }
+
+    .maintenance-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 10px;
+        background-color: #fff3cd;
+        color: #856404;
+        border-radius: 15px;
+        font-size: 0.9em;
+        margin-bottom: 15px;
     }
 
     .car-specs {
         display: flex;
+        flex-wrap: wrap;
         gap: 15px;
         margin-bottom: 15px;
         color: #666;
         font-size: 14px;
     }
 
+    .spec {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
     .spec i {
-        margin-right: 5px;
+        color: #4CAF50;
     }
 
     .car-pricing {
@@ -329,8 +284,8 @@
         flex: 1;
         padding: 10px;
         text-align: center;
-        text-decoration: none;
         border-radius: 5px;
+        text-decoration: none;
         font-weight: 500;
         transition: opacity 0.3s;
     }
@@ -349,35 +304,27 @@
         color: white;
     }
 
+    .btn-secondary {
+        background: #95a5a6;
+        color: white;
+        cursor: not-allowed;
+    }
+
     .no-cars {
         grid-column: 1 / -1;
         text-align: center;
         padding: 40px;
         background: white;
         border-radius: 10px;
-        color: #666;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 
     @media (max-width: 768px) {
-        .hero-section {
-            height: 300px;
+        .filter-form {
+            grid-template-columns: 1fr;
         }
 
-        .brand-name {
-            font-size: 3em;
-        }
-
-        .filter-group {
-            min-width: 100%;
-        }
-
-        .filter-button,
-        .reset-button {
-            width: 100%;
-            justify-content: center;
-        }
-
-        .car-grid {
+        .cars-grid {
             grid-template-columns: 1fr;
         }
     }

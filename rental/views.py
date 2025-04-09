@@ -1,8 +1,9 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Car, Customer, Rental, Payment, Review, Insurance, Location
-from django.db.models import Avg
+from .models import Car, Customer, Rental, Payment, Review, Insurance, Location, Maintenance, Employee
+from django.db.models import Avg, Sum, Count, Q
 from datetime import datetime, date, timedelta
 from django.db import models
+from django.utils import timezone
 
 from django.contrib import messages
 
@@ -14,6 +15,11 @@ from django.dispatch import receiver
 import json
 from django.core.serializers.json import DjangoJSONEncoder
 from django.http import JsonResponse
+
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.urls import reverse_lazy
 
 
 def car_list(request):
@@ -69,13 +75,14 @@ def car_list(request):
 
 def rent_car(request, car_id):
     car = get_object_or_404(Car, id=car_id)
-    locations = Location.objects.all()
-    locations_json = {str(loc.id): {
-        'address': loc.address,
-        'opening_hours': loc.opening_hours,
-        'phone': loc.phone
-    } for loc in locations}
-
+    locations = Location.objects.all()  # Recupera tutte le locations disponibili
+    insurances = Insurance.objects.all()  # Recupera tutte le assicurazioni disponibili
+    
+    # Debug: stampa il numero di assicurazioni trovate
+    print(f"Found {insurances.count()} insurance options")
+    for insurance in insurances:
+        print(f"Insurance: {insurance.name} - {insurance.price_per_day}€/day")
+    
     if request.method == "POST":
         first_name = request.POST.get("first_name")
         last_name = request.POST.get("last_name")
@@ -146,12 +153,22 @@ def rent_car(request, car_id):
         # Redirect alla pagina di pagamento
         return redirect('process_payment', payment_id=payment.id)
 
-
-    return render(request, 'rental/rent_car.html', {
-        'car': car,
-        'locations': locations,
-        'locations_json': json.dumps(locations_json)
-    })
+    else:
+        # Passa le assicurazioni come JSON per il calcolo del prezzo
+        insurances_json = {str(insurance.id): float(insurance.price_per_day) for insurance in insurances}
+        locations_json = {str(location.id): {
+            'address': location.address,
+            'opening_hours': location.opening_hours,
+            'phone': location.phone
+        } for location in locations}
+        
+        return render(request, 'rental/rent_car.html', {
+            'car': car,
+            'locations': locations,
+            'insurances': insurances,  # Passa le assicurazioni alla template
+            'insurances_json': json.dumps(insurances_json),
+            'locations_json': json.dumps(locations_json)
+        })
 
 
 def process_payment(request, payment_id):
@@ -239,3 +256,72 @@ def car_detail(request, car_id):
         'average_rating': round(average_rating, 1),
         'today': date.today().strftime('%Y-%m-%d')
     })
+
+def dashboard(request):
+    try:
+        # Statistiche auto
+        available_cars_count = Car.objects.filter(status='available').count()
+        
+        # Statistiche noleggi
+        active_rentals_count = Rental.objects.filter(
+            status__in=['confirmed', 'in_progress']
+        ).count()
+        
+        # Statistiche manutenzioni
+        maintenance_count = Maintenance.objects.filter(completed=False).count()
+        
+        # Calcolo fatturato mensile
+        start_of_month = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        monthly_revenue = Payment.objects.filter(
+            payment_date__gte=start_of_month,
+            status='completed'
+        ).aggregate(total=Sum('amount'))['total'] or 0
+        
+        # Noleggi recenti
+        recent_rentals = Rental.objects.select_related('car', 'customer').order_by('-start_date')[:5]
+        
+        # Manutenzioni in corso
+        active_maintenance = Maintenance.objects.select_related('car').filter(
+            completed=False
+        ).order_by('service_date')[:5]
+        
+        context = {
+            'available_cars_count': available_cars_count,
+            'active_rentals_count': active_rentals_count,
+            'maintenance_count': maintenance_count,
+            'monthly_revenue': monthly_revenue,
+            'recent_rentals': recent_rentals,
+            'active_maintenance': active_maintenance,
+        }
+        
+        return render(request, 'rental/dashboard.html', context)
+    except Exception as e:
+        # In caso di errore, mostra una dashboard vuota
+        context = {
+            'available_cars_count': 0,
+            'active_rentals_count': 0,
+            'maintenance_count': 0,
+            'monthly_revenue': 0,
+            'recent_rentals': [],
+            'active_maintenance': [],
+        }
+        return render(request, 'rental/dashboard.html', context)
+
+def manage_cars(request):
+    cars = Car.objects.all().order_by('-id')
+    
+    # Statistiche
+    total_cars = cars.count()
+    available_cars = cars.filter(status='available').count()
+    rented_cars = cars.filter(status='rented').count()
+    maintenance_cars = cars.filter(status='maintenance').count()
+    
+    context = {
+        'cars': cars,
+        'total_cars': total_cars,
+        'available_cars': available_cars,
+        'rented_cars': rented_cars,
+        'maintenance_cars': maintenance_cars,
+    }
+    
+    return render(request, 'rental/manage_cars.html', context)

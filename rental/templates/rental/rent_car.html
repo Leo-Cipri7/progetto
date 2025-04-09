@@ -35,6 +35,8 @@
                 <p><i class="fas fa-info-circle"></i> {{ car.description }}</p>
                 <p><i class="fas fa-tag"></i> Price per day: {{ car.price_per_day }}€</p>
                 <p><i class="fas fa-shield-alt"></i> Deposit: {{ car.deposit }}€</p>
+                <p><i class="fas fa-road"></i> Daily kilometer limit: {{ car.daily_kilometer_limit }} km</p>
+                <p><i class="fas fa-exclamation-triangle"></i> Extra kilometer price: {{ car.extra_kilometer_price }}€/km</p>
                 <p class="deposit-note"><i class="fas fa-clock"></i> Deposit will be refunded in 30 days</p>
             </div>
 
@@ -75,36 +77,34 @@
                         <select name="pickup_location" id="pickup_location" class="form-control" required>
                             <option value="">Select a location</option>
                             {% for location in locations %}
-                            <div class="location-option">
-                                <option value="{{ location.id }}">
-                                    {{ location.name }} - {{ location.city }}
-                                </option>
-                            </div>
+                            <option value="{{ location.id }}">
+                                {{ location.name }} - {{ location.city }}
+                            </option>
                             {% endfor %}
                         </select>
                         <small class="location-info" id="location-info"></small>
                     </div>
 
-                    {% if insurances %}
                     <div class="insurance-section">
                         <h3>Select Insurance</h3>
-                        {% for insurance in insurances %}
-                        <div class="insurance-option">
-                            <input type="radio" id="insurance_{{ insurance.id }}" 
-                                   name="insurance" value="{{ insurance.id }}"
-                                   {% if forloop.first %}checked{% endif %}>
-                            <label for="insurance_{{ insurance.id }}">
-                                <div class="insurance-header">
-                                    <span class="insurance-name">{{ insurance.name }}</span>
-                                    <span class="insurance-price">{{ insurance.price_per_day }}€/day</span>
-                                </div>
-                                <p class="insurance-description">{{ insurance.description }}</p>
-                                <p class="insurance-coverage">Coverage: {{ insurance.coverage_amount }}€</p>
-                            </label>
+                        <div class="insurance-options">
+                            {% for insurance in insurances %}
+                            <div class="insurance-option">
+                                <input type="radio" id="insurance_{{ insurance.id }}" 
+                                       name="insurance" value="{{ insurance.id }}"
+                                       data-price="{{ insurance.price_per_day }}"
+                                       {% if forloop.first %}checked{% endif %}>
+                                <label for="insurance_{{ insurance.id }}">
+                                    <div class="insurance-info">
+                                        <span class="insurance-name">{{ insurance.name }}</span>
+                                        <span class="insurance-price">+{{ insurance.price_per_day }}€/day</span>
+                                        <span class="insurance-description">{{ insurance.description }}</span>
+                                    </div>
+                                </label>
+                            </div>
+                            {% endfor %}
                         </div>
-                        {% endfor %}
                     </div>
-                    {% endif %}
 
                     <div id="total_price" class="price-summary"></div>
 
@@ -240,48 +240,65 @@
 
     .insurance-section {
         margin: 30px 0;
-        border-top: 2px solid #f0f0f0;
-        padding-top: 20px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+
+    .insurance-section h3 {
+        color: #2c3e50;
+        margin-bottom: 15px;
+    }
+
+    .insurance-options {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
     }
 
     .insurance-option {
-        margin: 15px 0;
+        position: relative;
+    }
+
+    .insurance-option input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+    }
+
+    .insurance-option label {
+        display: block;
         padding: 15px;
-        border: 1px solid #ddd;
+        background: white;
+        border: 2px solid #ddd;
         border-radius: 8px;
-        transition: all 0.3s ease;
+        cursor: pointer;
+        transition: all 0.3s;
     }
 
-    .insurance-option:hover {
-        border-color: #007bff;
-        background-color: #f8f9fa;
+    .insurance-option input[type="radio"]:checked + label {
+        border-color: #4CAF50;
+        background: #f1f8e9;
     }
 
-    .insurance-header {
+    .insurance-info {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 10px;
+        flex-direction: column;
+        gap: 5px;
     }
 
     .insurance-name {
-        font-weight: bold;
-        color: #333;
+        font-weight: 500;
+        color: #2c3e50;
     }
 
     .insurance-price {
-        color: #28a745;
-        font-weight: bold;
+        color: #4CAF50;
+        font-weight: 500;
     }
 
     .insurance-description {
-        color: #666;
-        margin: 5px 0;
-    }
-
-    .insurance-coverage {
-        color: #007bff;
         font-size: 0.9em;
+        color: #666;
     }
 
     .price-summary {
@@ -432,7 +449,7 @@
         let price_per_day = {{ car.price_per_day }};
         let deposit = {{ car.deposit }};
         let selected_insurance = document.querySelector('input[name="insurance"]:checked');
-        let insurance_price = selected_insurance ? {{ insurances_json|safe }}[selected_insurance.value] : 0;
+        let insurance_price = selected_insurance ? parseFloat(selected_insurance.dataset.price) : 0;
 
         if (start_date && end_date && end_date > start_date) {
             let days = (end_date - start_date) / (1000 * 60 * 60 * 24);

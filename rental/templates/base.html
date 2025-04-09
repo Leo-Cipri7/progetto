@@ -42,10 +42,12 @@
     </style>
 </head>
 <body>
+    {% block navbar %}
     <nav class="navbar">
         <a href="{% url 'car_list' %}">Home</a>
-        <a href="{% url 'payment_history' %}">Payment History</a>
+        <a href="{% url 'dashboard' %}">Dashboard</a>
     </nav>
+    {% endblock %}
     <div class="content">
         {% block content %}
         {% endblock %}

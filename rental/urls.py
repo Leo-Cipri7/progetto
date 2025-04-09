@@ -3,6 +3,9 @@ from .views import car_list, rent_car, process_payment, payment_success, payment
 from . import views
 
 urlpatterns = [
+    
+    path('dashboard/', views.dashboard, name='dashboard'),
+    path('manage-cars/', views.manage_cars, name='manage_cars'),
     path('', car_list, name='car_list'),  
     path('car/<int:car_id>/', car_detail, name='car_detail'),
     path('rent/<int:car_id>/', rent_car, name='rent_car'),
