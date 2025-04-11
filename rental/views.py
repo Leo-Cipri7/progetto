@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Car, Customer, Rental, Payment, Review, Insurance, Location, Maintenance, Employee
+from .forms import CarForm
 from django.db.models import Avg, Sum, Count, Q
 from datetime import datetime, date, timedelta
 from django.db import models
@@ -257,6 +258,7 @@ def car_detail(request, car_id):
         'today': date.today().strftime('%Y-%m-%d')
     })
 
+@login_required
 def dashboard(request):
     try:
         # Statistiche auto
@@ -285,6 +287,9 @@ def dashboard(request):
             completed=False
         ).order_by('service_date')[:5]
         
+        # Lista di tutte le auto
+        cars = Car.objects.all().order_by('-id')
+        
         context = {
             'available_cars_count': available_cars_count,
             'active_rentals_count': active_rentals_count,
@@ -292,6 +297,7 @@ def dashboard(request):
             'monthly_revenue': monthly_revenue,
             'recent_rentals': recent_rentals,
             'active_maintenance': active_maintenance,
+            'cars': cars,
         }
         
         return render(request, 'rental/dashboard.html', context)
@@ -304,6 +310,7 @@ def dashboard(request):
             'monthly_revenue': 0,
             'recent_rentals': [],
             'active_maintenance': [],
+            'cars': [],
         }
         return render(request, 'rental/dashboard.html', context)
 
@@ -325,3 +332,49 @@ def manage_cars(request):
     }
     
     return render(request, 'rental/manage_cars.html', context)
+
+@login_required
+def manage_car(request, car_id=None):
+    if car_id:
+        car = get_object_or_404(Car, id=car_id)
+    else:
+        car = None
+        
+    if request.method == 'POST':
+        form_data = request.POST.copy()
+        
+        # Gestisci l'immagine
+        if 'image' in request.FILES:
+            form_data['image'] = request.FILES['image']
+        
+        # Crea o aggiorna l'auto
+        if car:
+            form = CarForm(form_data, request.FILES, instance=car)
+        else:
+            form = CarForm(form_data, request.FILES)
+            
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Car saved successfully!')
+            return redirect('dashboard')
+        else:
+            messages.error(request, 'There were errors. Please check the data.')
+    else:
+        if car:
+            form = CarForm(instance=car)
+        else:
+            form = CarForm()
+            
+    return render(request, 'rental/manage_car.html', {
+        'form': form,
+        'car': car
+    })
+
+@login_required
+def delete_car(request, car_id):
+    car = get_object_or_404(Car, id=car_id)
+    if request.method == 'POST':
+        car.delete()
+        messages.success(request, 'Auto eliminata con successo!')
+        return redirect('dashboard')
+    return render(request, 'rental/delete_car.html', {'car': car})
