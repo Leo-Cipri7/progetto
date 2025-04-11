@@ -10,36 +10,36 @@
 <div class="container-fluid">
     <div class="row">
         <!-- Sidebar -->
-        <div class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+        <nav class="col-md-3 col-lg-2 d-md-block bg-dark sidebar collapse">
             <div class="position-sticky pt-3">
                 <ul class="nav flex-column">
                     <li class="nav-item">
-                        <a class="nav-link active" href="{% url 'dashboard' %}">
-                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        <a class="nav-link active text-white" href="{% url 'dashboard' %}">
+                            <i class="fas fa-tachometer-alt me-2"></i> Dashboard
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'manage_car' %}">
-                            <i class="fas fa-car"></i> Add Car
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'payment_history' %}">
-                            <i class="fas fa-history"></i> Payment History
+                        <a class="nav-link text-white" href="{% url 'payment_history' %}">
+                            <i class="fas fa-money-bill-wave me-2"></i> Payment History
                         </a>
                     </li>
                 </ul>
             </div>
-        </div>
+        </nav>
 
         <!-- Main content -->
         <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
             <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                <h1 class="h2">Dashboard</h1>
+                <h1 class="h2">Dashboard LuxeDrive</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <a href="{% url 'manage_car' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Add Car
+                    </a>
+                </div>
             </div>
 
             <!-- Statistics Cards -->
-            <div class="row">
+            <div class="row mb-4">
                 <div class="col-xl-3 col-md-6 mb-4">
                     <div class="card border-left-primary shadow h-100 py-2">
                         <div class="card-body">
@@ -47,7 +47,7 @@
                                 <div class="col mr-2">
                                     <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
                                         Total Cars</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_cars }}</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ cars.count }}</div>
                                 </div>
                                 <div class="col-auto">
                                     <i class="fas fa-car fa-2x text-gray-300"></i>
@@ -113,14 +113,11 @@
             <div class="card shadow mb-4">
                 <div class="card-header py-3 d-flex justify-content-between align-items-center">
                     <h6 class="m-0 font-weight-bold text-primary">Cars List</h6>
-                    <a href="{% url 'manage_car' %}" class="btn btn-primary btn-sm">
-                        <i class="fas fa-plus"></i> Add Car
-                    </a>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
-                            <thead>
+                            <thead class="thead-light">
                                 <tr>
                                     <th>Brand</th>
                                     <th>Model</th>
@@ -144,7 +141,7 @@
                                         <a href="{% url 'manage_car' car.id %}" class="btn btn-info btn-sm">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <a href="{% url 'delete_car' car.id %}" class="btn btn-danger btn-sm">
+                                        <a href="{% url 'delete_car' car.id %}" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this car?')">
                                             <i class="fas fa-trash"></i>
                                         </a>
                                     </td>
@@ -164,13 +161,14 @@
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-bordered" width="100%" cellspacing="0">
-                            <thead>
+                            <thead class="thead-light">
                                 <tr>
                                     <th>Car</th>
                                     <th>Customer</th>
                                     <th>Start Date</th>
                                     <th>End Date</th>
                                     <th>Status</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -181,9 +179,17 @@
                                     <td>{{ rental.start_date }}</td>
                                     <td>{{ rental.end_date }}</td>
                                     <td>
-                                        <span class="badge {% if rental.status == 'completed' %}bg-success{% elif rental.status == 'in_progress' %}bg-warning{% else %}bg-info{% endif %}">
+                                        <span class="badge {% if rental.status == 'completed' %}bg-success{% elif rental.status == 'confirmed' %}bg-primary{% elif rental.status == 'in_progress' %}bg-warning{% else %}bg-danger{% endif %}">
                                             {{ rental.get_status_display }}
                                         </span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'manage_rental' rental.id %}" class="btn btn-info btn-sm">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'delete_rental' rental.id %}" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this rental?')">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -195,4 +201,54 @@
         </main>
     </div>
 </div>
+
+<style>
+    .sidebar {
+        min-height: 100vh;
+        background: linear-gradient(180deg, #343a40 0%, #212529 100%);
+        z-index: 1000;
+    }
+    
+    .sidebar .nav-link {
+        color: rgba(255, 255, 255, 0.8);
+        padding: 1rem;
+        transition: all 0.3s;
+    }
+    
+    .sidebar .nav-link:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .sidebar .nav-link.active {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .card {
+        border: none;
+        border-radius: 0.5rem;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+    }
+    
+    .card-header {
+        background-color: #f8f9fc;
+        border-bottom: 1px solid #e3e6f0;
+    }
+    
+    .table thead th {
+        background-color: #f8f9fc;
+        border-bottom: 2px solid #e3e6f0;
+    }
+    
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .badge {
+        padding: 0.5em 0.75em;
+        font-weight: 500;
+    }
+</style>
 {% endblock %} 

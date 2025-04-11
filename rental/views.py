@@ -270,7 +270,7 @@ def dashboard(request):
         ).count()
         
         # Statistiche manutenzioni
-        maintenance_count = Maintenance.objects.filter(completed=False).count()
+        maintenance_count = Car.objects.filter(status='maintenance').count()
         
         # Calcolo fatturato mensile
         start_of_month = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -375,6 +375,37 @@ def delete_car(request, car_id):
     car = get_object_or_404(Car, id=car_id)
     if request.method == 'POST':
         car.delete()
-        messages.success(request, 'Auto eliminata con successo!')
+        messages.success(request, 'Car deleted successfully!')
         return redirect('dashboard')
     return render(request, 'rental/delete_car.html', {'car': car})
+
+
+
+@login_required
+def manage_rental(request, rental_id=None):
+    if rental_id:
+        rental = get_object_or_404(Rental, id=rental_id)
+    else:
+        rental = None
+
+    if request.method == 'POST':
+        # Gestisci l'aggiornamento del noleggio
+        if rental:
+            rental.status = request.POST.get('status')
+            rental.save()
+            messages.success(request, 'Rental updated successfully.')
+            return redirect('dashboard')
+    else:
+        return render(request, 'rental/manage_rental.html', {'rental': rental})
+
+@login_required
+def delete_rental(request, rental_id):
+    rental = get_object_or_404(Rental, id=rental_id)
+    if request.method == 'POST':
+        rental.delete()
+        messages.success(request, 'Rental deleted successfully.')
+        return redirect('dashboard')
+    return render(request, 'rental/delete_rental.html', {'rental': rental})
+
+
+

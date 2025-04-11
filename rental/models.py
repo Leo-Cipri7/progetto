@@ -19,9 +19,7 @@ class Car(models.Model):
     extra_kilometer_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     status = models.CharField(max_length=20, choices=[
         ('available', 'Available'),
-        ('rented', 'Rented'),
         ('maintenance', 'Maintenance'),
-        ('reserved', 'Reserved')
     ], default='available')
     
     
